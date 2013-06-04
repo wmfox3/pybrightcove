@@ -222,6 +222,7 @@ class APIConnection(Connection):
                     val = ",".join(val)
                 url += "&%s=%s" % (key, val)
         self._api_url = url
+        print "seeking %s" % url
         req = urllib2.urlopen(url)
         data = simplejson.loads(req.read())
         self._api_raw_data = data
@@ -304,6 +305,24 @@ def item_lister(command, _connection, page_size, page_number, sort_by,
         else:
             break
 
+def single_page_lister(command, _connection, page_size, page_number, sort_by,
+    sort_order, item_class, result_set, **kwargs):
+    """
+    A generator function for listing Video and Playlist objects.
+    """
+    # pylint: disable=R0913
+    page = page_number
+    item_collection = _connection.get_list(command,
+                                         page_size=page_size,
+                                         page_number=page,
+                                         sort_by=sort_by,
+                                         sort_order=sort_order,
+                                         item_class=item_class,
+                                         **kwargs)
+    result_set.total_count = item_collection.total_count
+    result_set.page_number = page
+    for item in item_collection.items:
+        yield item
 
 class ItemResultSet(object):
     """
@@ -328,11 +347,15 @@ class ItemResultSet(object):
         self.kwargs = kwargs
         self.total_count = None
 
+    def single_pager(self):
+        return single_page_lister(self.command, self._connection, self.page_size,
+            self.page_number, self.sort_by, self.sort_order, self.item_class,
+            self, **self.kwargs)
+
     def __iter__(self):
         return item_lister(self.command, self._connection, self.page_size,
             self.page_number, self.sort_by, self.sort_order, self.item_class,
             self, **self.kwargs)
-
 
 class ItemCollection(object):
     """

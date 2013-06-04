@@ -448,9 +448,9 @@ class Video(object):
             if name == 'long_description' and len(value) > 5000:
                 # val = value[:5000]
                 msg = "Video.long_description must be 5000 characters or less."
-            if name == 'short_description' and len(value) > 250:
+            if name == 'short_description' and len(value) > 500:
                 # val = value[:250]
-                msg = "Video.short_description must be 250 characters or less."
+                msg = "Video.short_description must be 500 characters or less."
             if name == 'item_state' and value not in (
                     enums.ItemStateEnum.ACTIVE,
                     enums.ItemStateEnum.INACTIVE):
@@ -757,3 +757,33 @@ class Video(object):
             Video, _connection, page_size, page_number, sort_by, sort_order,
             video_ids=ids)
 
+    @staticmethod
+    def search_videos(all=None, any=None, none=None, _connection=None,
+        page_size=100, page_number=0, sort_by=enums.DEFAULT_SORT_BY,
+        sort_order=enums.DEFAULT_SORT_ORDER):
+        """
+        List videos given a certain set criteria.
+        """
+        err = None
+        if not all and not any and not none:
+            err = "You must supply at least one of either all or and or none parameters."
+        if all and not isinstance(all, (tuple, list)):
+            err = "The all argument for Video.search_videos must an "
+            err += "iterable"
+        if any and not isinstance(any, (tuple, list)):
+            err = "The any argument for Video.search_videos must an "
+            err += "iterable"
+        if err:
+            raise exceptions.PyBrightcoveError(err)
+        allstr = None
+        anystr = None
+        nonestr = None
+        if all:
+            allstr = '&all='.join([str(t) for t in all])
+        if any:
+            anystr = '&any='.join([str(t) for t in any])
+        if none:
+            nonestr = '&none='.join([str(t) for t in none])
+        return connection.ItemResultSet('search_videos',
+            Video, _connection, page_size, page_number, sort_by, sort_order,
+            all=allstr, any=anystr, none=nonestr)
